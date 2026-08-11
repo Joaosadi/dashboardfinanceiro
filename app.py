@@ -104,8 +104,8 @@ def obter_historico_demonstrativos(ticker):
 
 tab_dre, tab_candlestick, tab_balancos = st.tabs([
         "Financeiro Consolidado", 
-        "🕯️ Gráfico Candlestick", 
-        "📑 Histórico de Balanços e DRE"
+        "Gráfico Candlestick", 
+        "Histórico de Balanços e DRE"
     ])
 
 with tab_dre:
@@ -120,6 +120,38 @@ with tab_dre:
     data["Earnings"] = data["Revenue"] * data["profitMargin"]
     # 2. Construindo a figura do Plotly
     fig = go.Figure()
+
+    fig.update_layout(
+    # 1. Título com quebra automática de linha em telas pequenas
+    title=dict(
+        text='Evolução Histórica: Receita vs Custo vs Lucro',
+        x=0.5,             # Centraliza o título
+        xanchor='center',
+        font=dict(size=14) # Tamanho de fonte menor para caber em telas estreitas
+    ),
+    
+    # 2. Legenda Horizontal posicionada ABAIXO do gráfico
+    legend=dict(
+        orientation="h",   # Legenda na horizontal
+        yanchor="top",
+        y=-0.2,            # Joga a legenda para baixo do eixo X
+        xanchor="center",
+        x=0.5
+    ),
+    
+    # 3. Ajuste de Margens e Automargin nos Eixos Y e X
+    xaxis=dict(
+        title_text='',      # Remove o título "Ano" para economizar espaço vertical se for óbvio
+        automargin=True
+    ),
+    yaxis=dict(
+        automargin=True    # Redimensiona a margem da esquerda se os números forem grandes
+    ),
+    
+    # 4. Margens da figura enxutas
+    margin=dict(l=10, r=10, t=50, b=50),
+    template='plotly_white'
+    )
     
     # Adiciona a barra de Receita
     fig.add_trace(go.Bar(
@@ -182,6 +214,38 @@ with tab_dre:
     with col1:
         fig = go.Figure()
 
+
+        fig.update_layout(
+        # 1. Título com quebra automática de linha em telas pequenas
+        title=dict(
+            text='Evolução Histórica: Receita vs Custo vs Lucro',
+            x=0.5,             # Centraliza o título
+            xanchor='center',
+            font=dict(size=14) # Tamanho de fonte menor para caber em telas estreitas
+        ),
+        
+        # 2. Legenda Horizontal posicionada ABAIXO do gráfico
+        legend=dict(
+            orientation="h",   # Legenda na horizontal
+            yanchor="top",
+            y=-0.2,            # Joga a legenda para baixo do eixo X
+            xanchor="center",
+            x=0.5
+        ),
+        
+        # 3. Ajuste de Margens e Automargin nos Eixos Y e X
+        xaxis=dict(
+            title_text='',      # Remove o título "Ano" para economizar espaço vertical se for óbvio
+            automargin=True
+        ),
+        yaxis=dict(
+            automargin=True    # Redimensiona a margem da esquerda se os números forem grandes
+        ),
+        
+        # 4. Margens da figura enxutas
+        margin=dict(l=10, r=10, t=50, b=50),
+        template='plotly_white'
+        )
         # Função para formatar os valores como porcentagem
         def formatar_pct(valor):
             if pd.isna(valor):
@@ -235,15 +299,7 @@ with tab_dre:
             yaxis=dict(
                 tickformat='.0%', # Formata as marcações do eixo Y diretamente em %
                 range=[min(min(data['returnOnEquity']), min(data['debtToEquity']), min(data['returnOnAssets'])), max(data['debtToEquity']) * 1.2] # Ajusta margem para os rótulos
-            ),
-            legend=dict(
-                orientation="h",
-                yanchor="bottom",
-                y=1.02,
-                xanchor="right",
-                x=1
-            ),
-            template='plotly_white'
+            )
         )
         
         st.plotly_chart(fig, use_container_width=True)
@@ -251,6 +307,39 @@ with tab_dre:
     with col2:
         fig = go.Figure()
         fig = make_subplots(specs=[[{"secondary_y": True}]])
+
+        fig.update_layout(
+            # 1. Título com quebra automática de linha em telas pequenas
+            title=dict(
+                text='Evolução Histórica: Receita vs Custo vs Lucro',
+                x=0.5,             # Centraliza o título
+                xanchor='center',
+                font=dict(size=14) # Tamanho de fonte menor para caber em telas estreitas
+            ),
+            
+            # 2. Legenda Horizontal posicionada ABAIXO do gráfico
+            legend=dict(
+                orientation="h",   # Legenda na horizontal
+                yanchor="top",
+                y=-0.2,            # Joga a legenda para baixo do eixo X
+                xanchor="center",
+                x=0.5
+            ),
+            
+            # 3. Ajuste de Margens e Automargin nos Eixos Y e X
+            xaxis=dict(
+                title_text='',      # Remove o título "Ano" para economizar espaço vertical se for óbvio
+                automargin=True
+            ),
+            yaxis=dict(
+                automargin=True    # Redimensiona a margem da esquerda se os números forem grandes
+            ),
+            
+            # 4. Margens da figura enxutas
+            margin=dict(l=10, r=10, t=50, b=50),
+            template='plotly_white'
+        )
+        
         
         fig.add_trace(go.Bar(
             x=data['Data'],
