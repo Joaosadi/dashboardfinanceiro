@@ -24,8 +24,6 @@ st.sidebar.header("Filtros de Análise")
 
 ticker = st.sidebar.selectbox("Código do Ativo (B3):", options = ticker_list).upper()
 
-TOKEN_BRAPI = "cdXudtXJ5wv2ALUe3JjozA"
-
 # métricas
 
 with sqlite3.connect(database) as conn:
@@ -105,17 +103,22 @@ def obter_historico_demonstrativos(ticker):
 tab_dre, tab_candlestick, tab_balancos = st.tabs([
         "Financeiro Consolidado", 
         "Gráfico Candlestick", 
-        "Histórico de Balanços e DRE"
+        "Dados Utilizados"
     ])
+with sqlite3.connect(database) as conn:
+    #dados aba 1
+    data = pd.read_sql("""SELECT endDate as Data, symbol as Symbol, totalRevenue as Revenue, ebitda as EBITDA, totalDebt as Debt,
+                            grossProfits as Profits, profitMargins as profitMargin,
+                            debtToEquity, returnOnAssets, returnOnEquity,
+                            totalCash, totalCashPerShare, revenuePerShare
+                            FROM indicadores_historicos WHERE symbol = ?""", 
+                            conn, params = (ticker,))
+
+    #dados aba 2
+    df_dados = pd.read_sql("SELECT DISTINCT * FROM y_data WHERE symbol LIKE ?", conn, params = [f"{ticker}"])
 
 with tab_dre:
-    with sqlite3.connect(database) as conn:
-        data = pd.read_sql("""SELECT endDate as Data, symbol as Symbol, totalRevenue as Revenue, ebitda as EBITDA, totalDebt as Debt,
-                                grossProfits as Profits, profitMargins as profitMargin,
-                                debtToEquity, returnOnAssets, returnOnEquity,
-                                totalCash, totalCashPerShare, revenuePerShare
-                            FROM indicadores_historicos WHERE symbol = ?""", 
-                                conn, params = (ticker,))
+    
 
     data["Earnings"] = data["Revenue"] * data["profitMargin"]
     # 2. Construindo a figura do Plotly
@@ -371,8 +374,92 @@ with tab_dre:
 
         st.plotly_chart(fig, use_container_width=True)
 
+with tab_candlestick:
+    
+    exibir_media = st.checkbox("Exibir Média Móvel (20 períodos)", value=True)
+    usar_log = st.checkbox("Exibir escala logarítimica", value=False)
+    
+    
+        
+    if not df_dados.empty:
+
+        # Define as cores das barras de volume (Verde se o dia foi de alta, Vermelho se baixa)
+        cores_volume = [
+            '#2ecc71' if close >= open_val else '#e74c3c'
+            for close, open_val in zip(df_dados['Close'], df_dados['Open'])
+        ]
+    
+        # Cria uma grade de 2 linhas e 1 coluna
+        # row_heights=[0.7, 0.3] -> 70% da altura para Preço, 30% para Volume
+        fig = make_subplots(
+            rows=2, 
+            cols=1, 
+            shared_xaxes=True,          # Sincroniza o zoom da data entre os dois gráficos
+            vertical_spacing=0.1,       # Espaço mínimo entre os dois gráficos
+            row_heights=[0.7, 0.3],     # Proporção das alturas
+            subplot_titles=(f"Preço: {ticker}", "Volume de Negociação")
+        )
+    
+        # --- PAINEL 1: CANDLESTICK (LINHA 1) ---
+        fig.add_trace(
+            go.Candlestick(
+                x=df_dados["Date"],
+                open=df_dados['Open'],
+                high=df_dados['High'],
+                low=df_dados['Low'],
+                close=df_dados['Close'],
+                name='Candlestick',
+                increasing_line_color='#2ecc71',
+                decreasing_line_color='#e74c3c'
+            ),
+            row=1, col=1
+        )
+
+        fig.add_trace(
+            go.Bar(
+                x=df_dados["Date"],
+                y=df_dados['Volume'],
+                name='Volume',
+                marker_color=cores_volume, # Usa as cores mapeadas por alta/baixa
+                showlegend=False
+            ),
+            row=2, col=1
+        )
+
+        if exibir_media:
+            df_dados['SMA_20'] = df_dados['Close'].rolling(window=20).mean()
+            fig.add_trace(
+                go.Scatter(
+                    x=df_dados["Date"],
+                    y=df_dados['SMA_20'],
+                    mode='lines',
+                    name='Média Móvel (20)',
+                    line=dict(color='#f39c12', width=1.5)
+                ),
+                row=1, col=1
+            )
 
 
+
+        fig.update_layout(
+            template="plotly_white",
+            xaxis_rangeslider_visible=False,
+            margin=dict(l=10, r=10, t=40, b=20),
+            height=1000,  # Usa o valor configurado (padrão 850px)
+            legend=dict(orientation="h", y=-0.1, x=0.5, xanchor="center")
+        )
+
+        # Aplica o tipo de escala dinamicamente apenas ao eixo Y principal (Preço)
+        tipo_escala_y = "log" if usar_log else "linear"
+        fig.update_yaxes(title_text="Preço (R$)", type=tipo_escala_y, row=1, col=1)
+        fig.update_yaxes(title_text="Volume", row=2, col=1)
+        
+        st.plotly_chart(fig, use_container_width=True)
+
+with tab_balancos:
+    data
+    df_dados
+    
 st.divider()
 
 
